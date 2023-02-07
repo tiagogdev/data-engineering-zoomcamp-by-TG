@@ -1,0 +1,15 @@
+from prefect.deployments import Deployment
+from q5_etl_web_to_gcs import etl_web_to_gcs
+from prefect.filesystems import GitHub
+
+storage = GitHub.load("github-repo")
+
+deployment = Deployment.build_from_flow(
+    flow=etl_web_to_gcs,
+    name="email-github-deploy",
+    storage=storage,
+    entrypoint="week_2_workflow_orchestration/homework/solutions/question_5/q5_etl_web_to_gcs.py:etl_web_to_gcs",
+)
+
+if __name__ == "__main__":
+    deployment.apply()
