@@ -40,7 +40,7 @@
 
 
 
-### [Homework](homework.md)
+### [Homework](/week_3_data_warehouse/homework/solutions/homework.md)
 
 
 ## Community notes

@@ -1,5 +1,8 @@
 import os
 import logging
+import requests
+import gzip
+import shutil
 
 from airflow import DAG
 from airflow.utils.dates import days_ago
@@ -7,26 +10,41 @@ from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 
 from google.cloud import storage
-from airflow.providers.google.cloud.operators.bigquery import BigQueryCreateExternalTableOperator
+from airflow.providers.google.cloud.operators.bigquery import (
+    BigQueryCreateExternalTableOperator,
+)
 import pyarrow.csv as pv
 import pyarrow.parquet as pq
+
+import pandas as pd
+
 
 PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 BUCKET = os.environ.get("GCP_GCS_BUCKET")
 
-dataset_file = "yellow_tripdata_2021-01.csv"
-dataset_url = f"https://s3.amazonaws.com/nyc-tlc/trip+data/{dataset_file}"
-path_to_local_home = os.environ.get("AIRFLOW_HOME", "/opt/airflow/")
-parquet_file = dataset_file.replace('.csv', '.parquet')
-BIGQUERY_DATASET = os.environ.get("BIGQUERY_DATASET", 'trips_data_all')
+dataset_file = "fhv_tripdata_2019-01.csv.gz"
+dataset_url = f"https://github.com/DataTalksClub/nyc-tlc-data/releases/download/fhv/{dataset_file}"
+dataset_temp = "/tmp"
+parquet_file = dataset_file.replace(".csv.gz", ".parquet")
+BIGQUERY_DATASET = os.environ.get("BIGQUERY_DATASET", "zoomcamp")
 
 
-def format_to_parquet(src_file):
-    if not src_file.endswith('.csv'):
-        logging.error("Can only accept source files in CSV format, for the moment")
-        return
-    table = pv.read_csv(src_file)
-    pq.write_table(table, src_file.replace('.csv', '.parquet'))
+# Function to download gzip files
+def download_gzip_files(url, dest_dir):
+    filename = os.path.join(dest_dir, url.split("/")[-1])
+    response = requests.get(url)
+    with open(filename, "wb") as f:
+        f.write(response.content)
+    return filename
+
+
+# Function to convert gzip files to parquet
+def convert_to_parquet(filename):
+    with gzip.open(filename, "rb") as f_in:
+        with open(filename[:-3], "wb") as f_out:
+            shutil.copyfileobj(f_in, f_out)
+    df = pd.read_csv(filename[:-3])
+    df.to_parquet(filename[:-7] + ".parquet", index=False)
 
 
 # NOTE: takes 20 mins, at an upload speed of 800kbps. Faster if your internet has a better upload speed
@@ -58,37 +76,41 @@ default_args = {
     "retries": 1,
 }
 
-# NOTE: DAG declaration - using a Context Manager (an implicit way)
 with DAG(
     dag_id="data_ingestion_gcs_dag",
     schedule_interval="@daily",
     default_args=default_args,
     catchup=False,
     max_active_runs=1,
-    tags=['dtc-de'],
+    tags=["dtc-de"],
 ) as dag:
 
-    download_dataset_task = BashOperator(
-        task_id="download_dataset_task",
-        bash_command=f"curl -sSL {dataset_url} > {path_to_local_home}/{dataset_file}"
+    # Define the download_gzip_files task
+    download_gzip_files_task = PythonOperator(
+        task_id="download_gzip_files_task",
+        python_callable=download_gzip_files,
+        op_args=[
+            dataset_url,
+            dataset_temp,
+        ],
+        dag=dag,
     )
 
-    format_to_parquet_task = PythonOperator(
-        task_id="format_to_parquet_task",
-        python_callable=format_to_parquet,
-        op_kwargs={
-            "src_file": f"{path_to_local_home}/{dataset_file}",
-        },
+    # Define the convert_to_parquet task
+    convert_to_parquet_task = PythonOperator(
+        task_id="convert_to_parquet_task",
+        python_callable=convert_to_parquet,
+        op_args=[f"{dataset_temp}/{dataset_file}"],
+        dag=dag,
     )
 
-    # TODO: Homework - research and try XCOM to communicate output values between 2 tasks/operators
     local_to_gcs_task = PythonOperator(
         task_id="local_to_gcs_task",
         python_callable=upload_to_gcs,
         op_kwargs={
             "bucket": BUCKET,
             "object_name": f"raw/{parquet_file}",
-            "local_file": f"{path_to_local_home}/{parquet_file}",
+            "local_file": f"{dataset_temp}/{parquet_file}",
         },
     )
 
@@ -107,4 +129,15 @@ with DAG(
         },
     )
 
-    download_dataset_task >> format_to_parquet_task >> local_to_gcs_task >> bigquery_external_table_task
+    rm_task = BashOperator(
+        task_id="rm_task",
+        bash_command=f"rm {dataset_temp}/{dataset_file}",
+    )
+
+    (
+        download_gzip_files_task
+        >> convert_to_parquet_task
+        >> local_to_gcs_task
+        >> bigquery_external_table_task
+        >> rm_task
+    )
