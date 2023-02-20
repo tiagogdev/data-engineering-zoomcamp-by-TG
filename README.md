@@ -9,7 +9,7 @@ This 9-week course focuses on data engineering and covers the following topics:
 * [Week 2](https://github.com/DataTalksClub/data-engineering-zoomcamp/tree/main/week_2_workflow_orchestration): Workflow Orchestration with [Prefect](https://www.prefect.io/)
   * [Homework 2](homeworks/week_2_workflow_orchestration/homework.md)
 * [Week 3](https://github.com/DataTalksClub/data-engineering-zoomcamp/tree/main/week_3_data_warehouse): Data Warehouse with [BigQuery](https://cloud.google.com/bigquery)
-  * [Homework 3](homeworks/week_3/homework.md)
+  * [Homework 3](homeworks/week_3_data_warehouse/homework.md)
 * [Week 4](https://github.com/DataTalksClub/data-engineering-zoomcamp/tree/main/week_4_analytics_engineering): Analytics engineering with [dbt](https://www.getdbt.com/)
 * Week 5: Batch processing with [Spark](https://spark.apache.org/) (Spark Dataframes & SQL)
 * Week 6: Streaming with [Kafka](https://kafka.apache.org/) (Kafka Connect and KSQL, Avro schemas)
