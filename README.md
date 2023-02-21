@@ -11,6 +11,7 @@ This 9-week course focuses on data engineering and covers the following topics:
 * [Week 3](https://github.com/DataTalksClub/data-engineering-zoomcamp/tree/main/week_3_data_warehouse): Data Warehouse with [BigQuery](https://cloud.google.com/bigquery)
   * [Homework 3](homeworks/week_3_data_warehouse/homework.md)
 * [Week 4](https://github.com/DataTalksClub/data-engineering-zoomcamp/tree/main/week_4_analytics_engineering): Analytics engineering with [dbt](https://www.getdbt.com/)
+  * [Homework 4](homeworks/week_4_analytics_engineering/homework.md)
 * Week 5: Batch processing with [Spark](https://spark.apache.org/) (Spark Dataframes & SQL)
 * Week 6: Streaming with [Kafka](https://kafka.apache.org/) (Kafka Connect and KSQL, Avro schemas)
 * Weeks 7, 8 & 9: Putting everything we learned to practice into a project

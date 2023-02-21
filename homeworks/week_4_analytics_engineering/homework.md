@@ -1,5 +1,7 @@
 ## Week 4 Homework 
 
+**This homework was done with the help of the dbt project I have made based on our learnings and can be accessed in this repository: https://github.com/tiagogdev/de-zoomcamp-dbt**
+
 In this homework, we'll use the models developed during the week 4 videos and enhance the already presented dbt project using the already loaded Taxi data for fhv vehicles for year 2019 in our DWH.
 
 This means that in this homework we use the following data [Datasets list](https://github.com/DataTalksClub/nyc-tlc-data/)
